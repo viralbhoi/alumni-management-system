@@ -16,13 +16,31 @@ export async function createRequest(req, res) {
     }
 
     try {
+        // 🔎 Check mentor validity
+        const mentorCheck = await pool.query(
+            `
+            SELECT id
+            FROM alumni
+            WHERE id = $1
+              AND role = 'ALUMNI'
+              AND verification_status = 'VERIFIED'
+            `,
+            [mentor_id],
+        );
+
+        if (mentorCheck.rowCount === 0) {
+            return res.status(400).json({
+                error: "Mentor not found or not eligible",
+            });
+        }
+
         const result = await pool.query(
             `
-      INSERT INTO mentorship_requests (requester_id, mentor_id, message)
-      VALUES ($1, $2, $3)
-      RETURNING id
-      `,
-            [requesterId, mentor_id, message ?? null]
+            INSERT INTO mentorship_requests (requester_id, mentor_id, message)
+            VALUES ($1, $2, $3)
+            RETURNING id
+            `,
+            [requesterId, mentor_id, message ?? null],
         );
 
         return res.status(201).json({ id: result.rows[0].id });
@@ -30,6 +48,7 @@ export async function createRequest(req, res) {
         if (err.code === "23505") {
             return res.status(400).json({ error: "Request already exists" });
         }
+
         console.error(err);
         return res.status(500).json({ error: "Internal server error" });
     }
@@ -43,13 +62,18 @@ export async function incomingRequests(req, res) {
 
     const result = await pool.query(
         `
-    SELECT r.id, a.full_name AS requester_name, r.message, r.status
-    FROM mentorship_requests r
-    JOIN alumni a ON a.id = r.requester_id
-    WHERE r.mentor_id = $1
-    ORDER BY r.created_at DESC
-    `,
-        [alumniId]
+        SELECT r.id,
+               a.full_name AS requester_name,
+               r.message,
+               r.status
+        FROM mentorship_requests r
+        JOIN alumni a ON a.id = r.requester_id
+        WHERE r.mentor_id = $1
+          AND a.role = 'ALUMNI'
+          AND a.verification_status = 'VERIFIED'
+        ORDER BY r.created_at DESC
+        `,
+        [alumniId],
     );
 
     res.json(result.rows);
@@ -63,13 +87,17 @@ export async function outgoingRequests(req, res) {
 
     const result = await pool.query(
         `
-    SELECT r.id, a.full_name AS mentor_name, r.status
-    FROM mentorship_requests r
-    JOIN alumni a ON a.id = r.mentor_id
-    WHERE r.requester_id = $1
-    ORDER BY r.created_at DESC
-    `,
-        [alumniId]
+        SELECT r.id,
+               a.full_name AS mentor_name,
+               r.status
+        FROM mentorship_requests r
+        JOIN alumni a ON a.id = r.mentor_id
+        WHERE r.requester_id = $1
+          AND a.role = 'ALUMNI'
+          AND a.verification_status = 'VERIFIED'
+        ORDER BY r.created_at DESC
+        `,
+        [alumniId],
     );
 
     res.json(result.rows);
@@ -93,7 +121,7 @@ export async function updateRequest(req, res) {
     SET status = $1, updated_at = now()
     WHERE id = $2 AND mentor_id = $3
     `,
-        [status, requestId, alumniId]
+        [status, requestId, alumniId],
     );
 
     if (result.rowCount === 0) {

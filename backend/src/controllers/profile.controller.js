@@ -14,7 +14,7 @@ export async function getProfile(req, res) {
       FROM alumni_profile
       WHERE alumni_id = $1
       `,
-            [alumniId]
+            [alumniId],
         );
 
         if (result.rows.length === 0) {
@@ -69,12 +69,52 @@ export async function upsertProfile(req, res) {
                 primary_industry ?? null,
                 location ?? null,
                 bio ?? null,
-            ]
+            ],
         );
 
         return res.json({ success: true });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: "Internal server error" });
+    }
+}
+
+export async function updateEducation(req, res) {
+    const { id } = req.params;
+    const alumniId = req.user.alumni_id;
+
+    const { institution, degree, field_of_study, start_year, end_year } =
+        req.body;
+
+    try {
+        const result = await pool.query(
+            `
+      UPDATE education
+      SET institution = $1,
+          degree = $2,
+          field_of_study = $3,
+          start_year = $4,
+          end_year = $5
+      WHERE id = $6 AND alumni_id = $7
+      RETURNING *
+      `,
+            [
+                institution,
+                degree,
+                field_of_study,
+                start_year,
+                end_year,
+                id,
+                alumniId,
+            ],
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: "Education not found" });
+        }
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: "Internal server error" });
     }
 }

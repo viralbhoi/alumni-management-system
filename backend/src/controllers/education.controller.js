@@ -15,7 +15,7 @@ export async function listEducation(req, res) {
       WHERE alumni_id = $1
       ORDER BY start_year DESC
       `,
-            [alumniId]
+            [alumniId],
         );
 
         return res.json(result.rows);
@@ -64,7 +64,7 @@ export async function addEducation(req, res) {
                 start_year,
                 end_year ?? null,
                 description ?? null,
-            ]
+            ],
         );
 
         return res.status(201).json({ id: result.rows[0].id });
@@ -118,7 +118,7 @@ export async function updateEducation(req, res) {
                 description ?? null,
                 educationId,
                 alumniId,
-            ]
+            ],
         );
 
         if (result.rowCount === 0) {
@@ -145,7 +145,7 @@ export async function deleteEducation(req, res) {
       DELETE FROM alumni_education
       WHERE id = $1 AND alumni_id = $2
       `,
-            [educationId, alumniId]
+            [educationId, alumniId],
         );
 
         if (result.rowCount === 0) {
@@ -157,4 +157,21 @@ export async function deleteEducation(req, res) {
         console.error(err);
         return res.status(500).json({ error: "Internal server error" });
     }
+}
+
+export async function getPublicEducation(req, res) {
+    const { id } = req.params;
+
+    const result = await pool.query(
+        `
+    SELECT degree_type, field_of_study,
+           institution, start_year, end_year
+    FROM alumni_education
+    WHERE alumni_id = $1
+    ORDER BY start_year DESC
+    `,
+        [id],
+    );
+
+    res.json(result.rows);
 }
