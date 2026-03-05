@@ -156,7 +156,7 @@ alumni
 
 ## Clone Repository
 
-git clone https://github.com/yourusername/alumni-management-system.git
+git clone https://github.com/viralbhoi/alumni-management-system.git
 
 ------------------------------------------------------------------------
 
