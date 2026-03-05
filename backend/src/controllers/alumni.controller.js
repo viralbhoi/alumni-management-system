@@ -7,7 +7,6 @@ import pool from "../db.js";
 export async function registerAlumni(req, res) {
     const { roll_no, full_name, graduation_year } = req.body;
 
-    // basic validation
     if (!roll_no || !full_name || !graduation_year) {
         return res.status(400).json({
             error: "roll_no, full_name, graduation_year are required",
@@ -17,19 +16,18 @@ export async function registerAlumni(req, res) {
     try {
         const result = await pool.query(
             `
-      INSERT INTO alumni (roll_no, full_name, graduation_year)
-      VALUES ($1, $2, $3)
-      RETURNING id, verification_status
-      `,
-            [roll_no, full_name, graduation_year],
+            INSERT INTO alumni (roll_no, full_name, graduation_year)
+            VALUES ($1, $2, $3)
+            RETURNING id, verification_status
+            `,
+            [roll_no.trim(), full_name.trim(), graduation_year],
         );
 
         return res.status(201).json(result.rows[0]);
     } catch (err) {
-        // duplicate identity
         if (err.code === "23505") {
             return res.status(409).json({
-                error: "Alumni with same roll number and name already exists",
+                error: "Alumni already exists with same roll number",
             });
         }
 
@@ -48,14 +46,14 @@ export async function getMyAlumni(req, res) {
     try {
         const result = await pool.query(
             `
-      SELECT id, roll_no, full_name, graduation_year, verification_status
-      FROM alumni
-      WHERE id = $1
-      `,
+            SELECT id, roll_no, full_name, graduation_year, verification_status
+            FROM alumni
+            WHERE id = $1
+            `,
             [alumniId],
         );
 
-        if (result.rows.length === 0) {
+        if (result.rowCount === 0) {
             return res.status(404).json({ error: "Alumni not found" });
         }
 
@@ -83,11 +81,11 @@ export async function verifyAlumni(req, res) {
     try {
         const result = await pool.query(
             `
-      UPDATE alumni
-      SET verification_status = $1
-      WHERE id = $2
-      RETURNING id, verification_status
-      `,
+            UPDATE alumni
+            SET verification_status = $1
+            WHERE id = $2
+            RETURNING id, verification_status
+            `,
             [status, alumniId],
         );
 
@@ -102,11 +100,23 @@ export async function verifyAlumni(req, res) {
     }
 }
 
+/**
+ * GET /api/alumni/search
+ * Discover + search alumni
+ */
 export async function searchAlumni(req, res) {
-    let { name, industry, graduation_year, page = 1, limit = 5 } = req.query;
+    let {
+        name,
+        industry,
+        field,
+        year_from,
+        year_to,
+        page = 1,
+        limit = 50,
+    } = req.query;
 
-    page = parseInt(page);
-    limit = parseInt(limit);
+    page = parseInt(page) || 1;
+    limit = parseInt(limit) || 50;
 
     const offset = (page - 1) * limit;
 
@@ -114,7 +124,7 @@ export async function searchAlumni(req, res) {
     let values = [];
     let idx = 1;
 
-    // 🔐 Always enforce visibility rules
+    // Always enforce visibility rules
     conditions.push(`a.role = 'ALUMNI'`);
     conditions.push(`a.verification_status = 'VERIFIED'`);
 
@@ -123,71 +133,119 @@ export async function searchAlumni(req, res) {
         values.push(`%${name}%`);
     }
 
-    if (graduation_year) {
-        conditions.push(`a.graduation_year = $${idx++}`);
-        values.push(graduation_year);
-    }
-
     if (industry) {
         conditions.push(`p.primary_industry ILIKE $${idx++}`);
         values.push(`%${industry}%`);
     }
 
-    const whereClause = `WHERE ${conditions.join(" AND ")}`;
-
-    const result = await pool.query(
-        `
-        SELECT a.id, a.full_name, a.graduation_year,
-               p.headline, p.current_company, p.primary_industry
-        FROM alumni a
-        LEFT JOIN alumni_profile p ON a.id = p.alumni_id
-        ${whereClause}
-        ORDER BY a.graduation_year DESC
-        LIMIT $${idx++} OFFSET $${idx}
-        `,
-        [...values, limit, offset],
-    );
-
-    res.json(result.rows);
-}
-
-export async function getPublicAlumni(req, res) {
-    const { id } = req.params;
-
-    const result = await pool.query(
-        `
-        SELECT a.id, a.full_name, a.graduation_year,
-               p.headline, p.current_company,
-               p.primary_industry, p.location, p.bio
-        FROM alumni a
-        LEFT JOIN alumni_profile p ON a.id = p.alumni_id
-        WHERE a.id = $1
-          AND a.role = 'ALUMNI'
-          AND a.verification_status = 'VERIFIED'
-        `,
-        [id],
-    );
-
-    if (result.rowCount === 0) {
-        return res.status(404).json({ error: "Not found" });
+    if (field) {
+        conditions.push(`e.field_of_study ILIKE $${idx++}`);
+        values.push(`%${field}%`);
     }
 
-    res.json(result.rows[0]);
-}
+    if (year_from) {
+        conditions.push(`a.graduation_year >= $${idx++}`);
+        values.push(year_from);
+    }
 
-export async function getAlumniByYear(req, res) {
+    if (year_to) {
+        conditions.push(`a.graduation_year <= $${idx++}`);
+        values.push(year_to);
+    }
+
+    const whereClause =
+        conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
     try {
-        const result = await pool.query(`
-      SELECT graduation_year, COUNT(*) as total
-      FROM alumni
-      WHERE role = 'ALUMNI'
-        AND verification_status = 'VERIFIED'
-      GROUP BY graduation_year
-      ORDER BY graduation_year DESC
-    `);
+        const result = await pool.query(
+            `
+            SELECT DISTINCT
+                a.id,
+                a.full_name,
+                a.graduation_year,
+                p.headline,
+                p.current_company,
+                p.primary_industry
+            FROM alumni a
+            LEFT JOIN alumni_profile p
+                ON a.id = p.alumni_id
+            LEFT JOIN alumni_education e
+                ON a.id = e.alumni_id
+            ${whereClause}
+            ORDER BY a.graduation_year DESC, a.full_name ASC
+            LIMIT $${idx++} OFFSET $${idx}
+            `,
+            [...values, limit, offset],
+        );
 
         res.json(result.rows);
     } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+}
+
+/**
+ * GET /api/public/:id
+ * Get public alumni profile
+ */
+export async function getPublicAlumni(req, res) {
+    const { id } = req.params;
+
+    try {
+        const result = await pool.query(
+            `
+            SELECT
+                a.id,
+                a.full_name,
+                a.graduation_year,
+                p.headline,
+                p.current_company,
+                p.primary_industry,
+                p.location,
+                p.bio
+            FROM alumni a
+            LEFT JOIN alumni_profile p
+                ON a.id = p.alumni_id
+            WHERE a.id = $1
+              AND a.role = 'ALUMNI'
+              AND a.verification_status = 'VERIFIED'
+            `,
+            [id],
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: "Not found" });
+        }
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+}
+
+/**
+ * GET /api/alumni/years
+ * Used for discover filters
+ */
+export async function getAlumniByYear(req, res) {
+    try {
+        const result = await pool.query(
+            `
+            SELECT graduation_year,
+                   COUNT(*) AS total
+            FROM alumni
+            WHERE role = 'ALUMNI'
+              AND verification_status = 'VERIFIED'
+            GROUP BY graduation_year
+            ORDER BY graduation_year DESC
+            `,
+        );
+
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
         res.status(500).json({ error: "Internal server error" });
     }
 }

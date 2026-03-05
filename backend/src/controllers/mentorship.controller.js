@@ -16,7 +16,6 @@ export async function createRequest(req, res) {
     }
 
     try {
-        // 🔎 Check mentor validity
         const mentorCheck = await pool.query(
             `
             SELECT id

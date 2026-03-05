@@ -13,6 +13,7 @@ import Mentorship from "./pages/Mentorship";
 import Search from "./pages/Search";
 import PublicProfile from "./pages/PublicProfile";
 import Admin from "./pages/Admin";
+import Discover from "./pages/Discover";
 
 export default function App() {
     return (
@@ -65,18 +66,18 @@ export default function App() {
                     }
                 />
                 <Route
-                    path="/search"
-                    element={
-                        <ProtectedRoute>
-                            <Search />
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
                     path="/admin"
                     element={
                         <ProtectedRoute>
                             <Admin />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/discover"
+                    element={
+                        <ProtectedRoute>
+                            <Discover />
                         </ProtectedRoute>
                     }
                 />
