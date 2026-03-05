@@ -7,21 +7,6 @@ institutional announcements.
 This project follows a production-style architecture using Node.js,
 Express, PostgreSQL, and React with role-based access control.
 
-The system is being prepared for deployment for a real educational
-institute.
-
-------------------------------------------------------------------------
-
-# Institute
-
-C.V.M. Higher Secondary Education Complex (Science Stream)\
-Rajratna P. T. Patel Science College Building\
-Mota Bazar, Vallabh Vidyanagar\
-District Anand, Gujarat, India
-
-Established in June 1976
-
-------------------------------------------------------------------------
 
 # Features
 
