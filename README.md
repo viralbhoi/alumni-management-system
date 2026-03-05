@@ -18,46 +18,72 @@ Express, PostgreSQL, and React with role-based access control.
 
 ## Alumni Profiles
 
-Each alumni can maintain a professional profile including: - Headline -
-Current Company - Role Title - Industry - Location - Bio
+Each alumni can maintain a professional profile including: 
+- Headline
+- Current Company
+- Role Title
+- Industry
+- Location
+- Bio
 
 ## Education History
 
-Alumni can add multiple education records: - Degree Type - Field of
-Study - Institution - Start Year - End Year - Description
+Alumni can add multiple education records: - Degree Type 
+- Field of Study
+- Institution
+- Start Year
+- End Year
+- Description
 
 ## Professional Experience
 
-Alumni can maintain career history: - Company - Role Title - Industry -
-Start Year - End Year - Description
+Alumni can maintain career history: 
+- Company
+- Role Title
+- Industry
+- Start Year
+- End Year
+- Description
 
 ## Alumni Discovery
 
-Users can explore alumni using filters: - Name - Industry - Field of
-Study - Graduation Year Range
+Users can explore alumni using filters: 
+- Name
+- Industry
+- Field of Study
+- Graduation Year Range
 
 Results can also be filtered year-wise on the UI.
 
 ## Public Alumni Profiles
 
-Each alumni has a public profile page displaying: - Personal headline -
-Professional experience - Educational history
+Each alumni has a public profile page displaying: 
+- Personal headline 
+- Professional experience
+- Educational history
 
 ## Mentorship System
 
-Alumni can: - Send mentorship requests - Accept or reject requests -
-Track incoming and outgoing mentorship requests
+Alumni can: 
+- Send mentorship requests
+- Accept or reject requests 
+- Track incoming and outgoing mentorship requests
 
 ## Announcements
 
-Institution administrators can: - Create announcements - Pin important
-announcements - Update announcements - Delete announcements
+Institution administrators can: 
+- Create announcements
+- Pin important announcements
+- Update announcements
+- Delete announcements
 
 Announcements appear on alumni dashboards.
 
 ## Admin Panel
 
-Administrators can: - Verify alumni registrations - Manage announcements
+Administrators can: 
+- Verify alumni registrations
+- Manage announcements
 
 ------------------------------------------------------------------------
 
@@ -81,16 +107,28 @@ Administrators can: - Verify alumni registrations - Manage announcements
 
 # Project Architecture
 
-Frontend (React) \| v REST API (Express) \| v PostgreSQL Database
+<pre>
+Frontend (React) 
+REST API (Express) 
+PostgreSQL Database
 
 Backend structure:
 
-backend/ controllers/ routes/ middlewares/ db.js app.js
+backend/ 
+  controllers/ 
+  routes/ 
+  middlewares/ 
+  db.js 
+  app.js
 
 Frontend structure:
 
-frontend/ pages/ components/ api/ App.jsx
-
+frontend/ 
+  pages/ 
+  components/ 
+  api/ 
+  App.jsx
+</pre>
 ------------------------------------------------------------------------
 
 # Database Schema (Simplified)
@@ -105,7 +143,12 @@ announcements
 
 Relationship overview:
 
-alumni ├── alumni_profile ├── alumni_experience └── alumni_education
+<pre>
+alumni
+    ├── alumni_profile 
+    ├── alumni_experience 
+    └── alumni_education 
+</pre>
 
 ------------------------------------------------------------------------
 
